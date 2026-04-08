@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hashtag Analysis — BotScope</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #111827;
+            color: #f1f5f9;
+            min-height: 100vh;
+        }
+
+        nav {
+            background: #111827;
+            border-bottom: 1px solid #1f2937;
+            padding: 0 40px;
+            height: 64px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+        }
+
+        .logo-icon {
+            width: 34px;
+            height: 34px;
+            background: #f97316;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+
+        .logo-text { font-size: 1.3rem; font-weight: 700; color: #f1f5f9; letter-spacing: -0.3px; }
+        .logo-text span { color: #f97316; }
+
+        .nav-links { display: flex; gap: 6px; }
+
+        .nav-link {
+            padding: 7px 16px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: #94a3b8;
+            transition: all 0.15s;
+        }
+
+        .nav-link:hover { background: #1f2937; color: #f1f5f9; }
+        .nav-link.active { background: #431407; color: #f97316; }
+
+        .page-header {
+            background: #1f2937;
+            border-bottom: 1px solid #374151;
+            padding: 32px 40px;
+        }
+
+        .page-header h1 { font-size: 1.7rem; font-weight: 700; margin-bottom: 6px; }
+        .page-header p { color: #94a3b8; font-size: 0.95rem; }
+
+        .main {
+            max-width: 1000px;
+            margin: 40px auto;
+            padding: 0 30px 60px;
+        }
+
+        .search-card {
+            background: #1f2937;
+            border: 1px solid #374151;
+            border-radius: 14px;
+            padding: 28px 32px;
+            margin-bottom: 28px;
+        }
+
+        .search-card label {
+            display: block;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 10px;
+        }
+
+        .input-wrap { position: relative; }
+
+        .hashtag-input {
+            width: 100%;
+            background: #111827;
+            border: 1px solid #374151;
+            border-radius: 8px;
+            padding: 12px 16px;
+            font-size: 1rem;
+            color: #f1f5f9;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .hashtag-input::placeholder { color: #475569; }
+        .hashtag-input:focus { border-color: #f97316; }
+
+        .autocomplete {
+            position: absolute;
+            top: calc(100% + 4px);
+            left: 0; right: 0;
+            background: #1f2937;
+            border: 1px solid #374151;
+            border-radius: 8px;
+            max-height: 240px;
+            overflow-y: auto;
+            display: none;
+            z-index: 50;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+        }
+
+        .ac-item {
+            padding: 11px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            transition: background 0.1s;
+            border-bottom: 1px solid #111827;
+        }
+
+        .ac-item:last-child { border-bottom: none; }
+        .ac-item:hover { background: #111827; }
+
+        .ac-name { font-weight: 600; color: #f97316; font-size: 0.95rem; }
+        .ac-count { font-size: 0.78rem; color: #64748b; background: #111827; padding: 2px 8px; border-radius: 10px; }
+
+        .selected-tag {
+            display: none;
+            align-items: center;
+            gap: 12px;
+            background: #111827;
+            border: 1px solid #431407;
+            border-radius: 8px;
+            padding: 10px 14px;
+            margin-top: 10px;
+        }
+
+        .tag-badge {
+            font-weight: 700;
+            color: #f97316;
+            font-size: 1rem;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border-radius: 7px;
+            font-size: 0.88rem;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: all 0.15s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-primary { background: #f97316; color: #ffffff; }
+        .btn-primary:hover { background: #ea6c07; }
+        .btn-primary:hover { background: #22d3ee; }
+        .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+        .btn-ghost { background: transparent; color: #64748b; border: 1px solid #374151; font-size: 0.78rem; padding: 5px 12px; }
+        .btn-ghost:hover { color: #94a3b8; }
+        .btn-outline-sm { background: #111827; color: #94a3b8; border: 1px solid #374151; padding: 5px 12px; font-size: 0.8rem; border-radius: 6px; text-decoration: none; }
+
+        .analyze-btn { width: 100%; justify-content: center; margin-top: 18px; padding: 13px; font-size: 0.95rem; }
+
+        /* Stats */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin-bottom: 28px;
+        }
+
+        .stat-card {
+            background: #1f2937;
+            border: 1px solid #374151;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .stat-num { font-size: 2rem; font-weight: 800; margin-bottom: 4px; }
+        .stat-cyan { color: #f97316; }
+        .stat-red { color: #f87171; }
+        .stat-green { color: #4ade80; }
+        .stat-label { font-size: 0.75rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; }
+
+        /* Bar */
+        .ratio-card {
+            background: #1f2937;
+            border: 1px solid #374151;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 28px;
+        }
+
+        .ratio-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 14px;
+        }
+
+        .ratio-title { font-weight: 600; font-size: 0.95rem; }
+        .ratio-pct { font-size: 0.9rem; color: #94a3b8; }
+
+        .bar-track {
+            height: 16px;
+            background: #111827;
+            border-radius: 8px;
+            overflow: hidden;
+            display: flex;
+        }
+
+        .bar-bot { background: #ef4444; transition: width 1s ease; }
+        .bar-human { background: #22c55e; transition: width 1s ease; }
+
+        .bar-legend {
+            display: flex;
+            gap: 20px;
+            margin-top: 10px;
+        }
+
+        .legend-item { display: flex; align-items: center; gap: 6px; font-size: 0.8rem; color: #94a3b8; }
+        .dot { width: 10px; height: 10px; border-radius: 50%; }
+        .dot-red { background: #ef4444; }
+        .dot-green { background: #22c55e; }
+
+        /* Table */
+        .table-card {
+            background: #1f2937;
+            border: 1px solid #374151;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .table-card-header {
+            padding: 18px 24px;
+            border-bottom: 1px solid #374151;
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+
+        table { width: 100%; border-collapse: collapse; }
+
+        th {
+            background: #111827;
+            text-align: left;
+            padding: 12px 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        td {
+            padding: 14px 20px;
+            border-bottom: 1px solid #111827;
+            font-size: 0.9rem;
+        }
+
+        tr:last-child td { border-bottom: none; }
+        tr:hover td { background: #111827; }
+
+        .badge {
+            padding: 3px 10px;
+            border-radius: 10px;
+            font-size: 0.72rem;
+            font-weight: 700;
+            display: inline-block;
+        }
+
+        .badge-bot { background: #450a0a; color: #f87171; border: 1px solid #7f1d1d; }
+        .badge-human { background: #052e16; color: #4ade80; border: 1px solid #14532d; }
+
+        /* Pagination */
+        .pagination {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 24px;
+            border-top: 1px solid #374151;
+        }
+
+        .pagination-info { font-size: 0.82rem; color: #64748b; }
+        .pagination-controls { display: flex; gap: 4px; }
+
+        .page-btn {
+            padding: 5px 12px;
+            background: #111827;
+            border: 1px solid #374151;
+            border-radius: 5px;
+            color: #94a3b8;
+            font-size: 0.82rem;
+            cursor: pointer;
+            transition: all 0.1s;
+        }
+
+        .page-btn:hover:not(:disabled) { border-color: #f97316; color: #f97316; }
+        .page-btn.active { background: #f97316; color: #111827; border-color: #f97316; font-weight: 700; }
+        .page-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+        /* Overlay */
+        .overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.9);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 200;
+        }
+
+        .spinner {
+            width: 48px; height: 48px;
+            border: 4px solid #1f2937;
+            border-top: 4px solid #f97316;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-bottom: 18px;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .overlay p { color: #94a3b8; font-size: 0.9rem; margin-top: 6px; }
+        .overlay h3 { color: #f1f5f9; font-size: 1.1rem; }
+
+        .results-section { display: none; }
+    </style>
+</head>
+<body>
+
+<nav>
+    <a class="logo" href="/">
+        <div class="logo-icon">🔭</div>
+        <span class="logo-text">Bot<span>Scope</span></span>
+    </a>
+    <div class="nav-links">
+        <a class="nav-link" href="/">Home</a>
+        <a class="nav-link" href="/user-analysis">User Analysis</a>
+        <a class="nav-link active" href="/hashtag-analysis">Hashtag Analysis</a>
+        <a class="nav-link" href="/simulation">Simulation Lab</a>
+    </div>
+</nav>
+
+<div class="page-header">
+    <h1>📊 Hashtag Analysis</h1>
+    <p>Scan all unique users who engaged with a hashtag and detect bot-driven activity patterns.</p>
+</div>
+
+<div class="main">
+    <div class="search-card">
+        <label>Select Hashtag</label>
+        <div class="input-wrap">
+            <input type="text" id="hashtagInput" class="hashtag-input" placeholder="Type to search hashtags..." autocomplete="off">
+            <div id="autocomplete" class="autocomplete"></div>
+        </div>
+        <div id="selectedTag" class="selected-tag">
+            <span id="tagBadge" class="tag-badge">#topic</span>
+            <button class="btn btn-ghost" onclick="clearTag()">Change</button>
+        </div>
+        <button id="analyzeBtn" class="btn btn-primary analyze-btn" onclick="runAnalysis()" disabled>
+            🔍 Analyze Hashtag
+        </button>
+    </div>
+
+    <div id="results" class="results-section">
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div id="sTweets" class="stat-num stat-cyan">—</div>
+                <div class="stat-label">Total Tweets</div>
+            </div>
+            <div class="stat-card">
+                <div id="sUsers" class="stat-num stat-cyan">—</div>
+                <div class="stat-label">Unique Users</div>
+            </div>
+            <div class="stat-card">
+                <div id="sBots" class="stat-num stat-red">—</div>
+                <div class="stat-label">Bots Detected</div>
+            </div>
+            <div class="stat-card">
+                <div id="sHumans" class="stat-num stat-green">—</div>
+                <div class="stat-label">Humans</div>
+            </div>
+        </div>
+
+        <div class="ratio-card">
+            <div class="ratio-header">
+                <span class="ratio-title">Bot / Human Ratio</span>
+                <span id="ratioPct" class="ratio-pct">—</span>
+            </div>
+            <div class="bar-track">
+                <div id="barBot" class="bar-bot" style="width:0%"></div>
+                <div id="barHuman" class="bar-human" style="width:100%"></div>
+            </div>
+            <div class="bar-legend">
+                <div class="legend-item"><div class="dot dot-red"></div> Bot activity</div>
+                <div class="legend-item"><div class="dot dot-green"></div> Human activity</div>
+            </div>
+        </div>
+
+        <div class="table-card">
+            <div class="table-card-header" id="tableTitle">User Predictions</div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Display Name</th>
+                        <th>Username</th>
+                        <th>Prediction</th>
+                        <th>Confidence</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody"></tbody>
+            </table>
+            <div class="pagination">
+                <div id="pgInfo" class="pagination-info"></div>
+                <div id="pgControls" class="pagination-controls"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="overlay" class="overlay">
+    <div class="spinner"></div>
+    <h3>Analyzing users...</h3>
+    <p>Running ML model on all hashtag participants</p>
+</div>
+
+<script>
+    const API = 'http://localhost:8000';
+    let selectedId = null;
+    let allUsers = [];
+    let page = 1;
+    const PER_PAGE = 10;
+    let debounce = null;
+    let abortCtrl = null;
+
+    const input = document.getElementById('hashtagInput');
+    const ac = document.getElementById('autocomplete');
+
+    input.addEventListener('focus', () => { if (!input.value.trim()) search(''); });
+    input.addEventListener('input', e => {
+        clearTimeout(debounce);
+        debounce = setTimeout(() => search(e.target.value.trim()), 250);
+    });
+
+    document.addEventListener('click', e => {
+        if (!input.contains(e.target) && !ac.contains(e.target)) ac.style.display = 'none';
+    });
+
+    async function search(q) {
+        if (abortCtrl) abortCtrl.abort();
+        abortCtrl = new AbortController();
+        try {
+            const url = q
+                ? `${API}/api/hashtags/search/${encodeURIComponent(q)}`
+                : `${API}/api/hashtags/top/tweets?limit=10`;
+            const res = await fetch(url, { signal: abortCtrl.signal });
+            const data = await res.json();
+            if (input.value.trim() !== q) return;
+            const list = q ? data : data.top_hashtags;
+            renderAC(list);
+        } catch (e) { if (e.name !== 'AbortError') console.error(e); }
+    }
+
+    function renderAC(items) {
+        if (!items || !items.length) {
+            ac.innerHTML = '<div style="padding:14px;text-align:center;color:#475569;font-size:0.85rem;">No hashtags found</div>';
+        } else {
+            ac.innerHTML = items.map(h => `
+                <div class="ac-item" onclick="selectTag(${h.id},'${h.name}')">
+                    <span class="ac-name">#${h.name}</span>
+                    <span class="ac-count">${h.tweet_count || 0} tweets</span>
+                </div>`).join('');
+        }
+        ac.style.display = 'block';
+    }
+
+    function selectTag(id, name) {
+        selectedId = id;
+        document.getElementById('tagBadge').textContent = `#${name}`;
+        document.querySelector('.input-wrap').style.display = 'none';
+        document.getElementById('selectedTag').style.display = 'flex';
+        ac.style.display = 'none';
+        document.getElementById('analyzeBtn').disabled = false;
+    }
+
+    function clearTag() {
+        selectedId = null;
+        input.value = '';
+        document.querySelector('.input-wrap').style.display = 'block';
+        document.getElementById('selectedTag').style.display = 'none';
+        document.getElementById('analyzeBtn').disabled = true;
+        input.focus();
+    }
+
+    async function runAnalysis() {
+        if (!selectedId) return;
+        document.getElementById('overlay').style.display = 'flex';
+        document.getElementById('results').style.display = 'none';
+        try {
+            const res = await fetch(`${API}/api/hashtags/${selectedId}/analyze`);
+            if (!res.ok) throw new Error('Analysis failed');
+            const data = await res.json();
+            allUsers = data.users;
+            page = 1;
+            renderStats(data);
+            renderTable();
+            document.getElementById('results').style.display = 'block';
+        } catch (e) {
+            alert('Error: ' + e.message);
+        } finally {
+            document.getElementById('overlay').style.display = 'none';
+        }
+    }
+
+    function renderStats(d) {
+        document.getElementById('sTweets').textContent = d.total_tweets;
+        document.getElementById('sUsers').textContent = d.total_users;
+        document.getElementById('sBots').textContent = d.bot_count;
+        document.getElementById('sHumans').textContent = d.human_count;
+        document.getElementById('ratioPct').textContent = `${d.bot_percentage}% bot activity`;
+        document.getElementById('barBot').style.width = `${d.bot_percentage}%`;
+        document.getElementById('barHuman').style.width = `${100 - d.bot_percentage}%`;
+        document.getElementById('tableTitle').textContent = `User Predictions — #${d.hashtag_name}`;
+    }
+
+    function renderTable() {
+        const start = (page - 1) * PER_PAGE;
+        const slice = allUsers.slice(start, start + PER_PAGE);
+        document.getElementById('tableBody').innerHTML = slice.map(u => `
+            <tr>
+                <td style="font-weight:600">${u.display_name}</td>
+                <td style="color:#64748b">@${u.username}</td>
+                <td><span class="badge ${u.is_bot ? 'badge-bot' : 'badge-human'}">${u.prediction}</span></td>
+                <td style="color:#94a3b8">${u.confidence ? u.confidence + '%' : '—'}</td>
+                <td><a href="http://localhost:3000/profile/${u.id}" target="_blank" class="btn-outline-sm">View</a></td>
+            </tr>`).join('');
+        renderPagination();
+    }
+
+    function renderPagination() {
+        const total = allUsers.length;
+        const pages = Math.ceil(total / PER_PAGE);
+        const s = total === 0 ? 0 : (page - 1) * PER_PAGE + 1;
+        const e = Math.min(page * PER_PAGE, total);
+        document.getElementById('pgInfo').textContent = `Showing ${s}–${e} of ${total} users`;
+        let html = `<button class="page-btn" ${page===1?'disabled':''} onclick="goPage(${page-1})">Prev</button>`;
+        let sp = Math.max(1, page - 2), ep = Math.min(pages, sp + 4);
+        if (ep - sp < 4) sp = Math.max(1, ep - 4);
+        for (let i = sp; i <= ep; i++) html += `<button class="page-btn ${i===page?'active':''}" onclick="goPage(${i})">${i}</button>`;
+        html += `<button class="page-btn" ${page===pages||pages===0?'disabled':''} onclick="goPage(${page+1})">Next</button>`;
+        document.getElementById('pgControls').innerHTML = html;
+    }
+
+    function goPage(p) { page = p; renderTable(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+</script>
+</body>
+</html>

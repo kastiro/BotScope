@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulation Lab — BotScope</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #111827;
+            color: #f1f5f9;
+            min-height: 100vh;
+        }
+
+        nav {
+            background: #111827;
+            border-bottom: 1px solid #1f2937;
+            padding: 0 40px;
+            height: 64px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+        }
+
+        .logo-icon {
+            width: 34px;
+            height: 34px;
+            background: #f97316;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+
+        .logo-text { font-size: 1.3rem; font-weight: 700; color: #f1f5f9; letter-spacing: -0.3px; }
+        .logo-text span { color: #f97316; }
+
+        .nav-links { display: flex; gap: 6px; }
+
+        .nav-link {
+            padding: 7px 16px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: #94a3b8;
+            transition: all 0.15s;
+        }
+
+        .nav-link:hover { background: #1f2937; color: #f1f5f9; }
+        .nav-link.active { background: #431407; color: #f97316; }
+
+        .page-header {
+            background: #1f2937;
+            border-bottom: 1px solid #374151;
+            padding: 32px 40px;
+        }
+
+        .page-header h1 { font-size: 1.7rem; font-weight: 700; margin-bottom: 6px; }
+        .page-header p { color: #94a3b8; font-size: 0.95rem; }
+
+        .main {
+            max-width: 680px;
+            margin: 40px auto;
+            padding: 0 30px 60px;
+        }
+
+        .info-banner {
+            background: #0c1a2e;
+            border: 1px solid #1e3a5f;
+            border-radius: 10px;
+            padding: 14px 18px;
+            margin-bottom: 24px;
+            font-size: 0.88rem;
+            color: #7dd3fc;
+            display: flex;
+            gap: 10px;
+            align-items: flex-start;
+            line-height: 1.5;
+        }
+
+        .form-card {
+            background: #1f2937;
+            border: 1px solid #374151;
+            border-radius: 14px;
+            padding: 32px;
+        }
+
+        .field {
+            margin-bottom: 24px;
+        }
+
+        .field label {
+            display: block;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+
+        .field input, .field textarea {
+            width: 100%;
+            background: #111827;
+            border: 1px solid #374151;
+            border-radius: 8px;
+            padding: 12px 16px;
+            font-size: 0.95rem;
+            color: #f1f5f9;
+            outline: none;
+            transition: border-color 0.2s;
+            font-family: inherit;
+        }
+
+        .field textarea { min-height: 90px; resize: vertical; }
+        .field input::placeholder, .field textarea::placeholder { color: #475569; }
+        .field input:focus, .field textarea:focus { border-color: #f97316; }
+
+        .field-hint {
+            margin-top: 6px;
+            font-size: 0.78rem;
+            color: #475569;
+        }
+
+        .divider {
+            border: none;
+            border-top: 1px solid #374151;
+            margin: 28px 0;
+        }
+
+        .btn-run {
+            width: 100%;
+            padding: 14px;
+            background: #f97316;
+            color: #ffffff;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.15s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-run:hover { background: #22d3ee; }
+
+        .success-box {
+            background: #052e16;
+            border: 1px solid #14532d;
+            color: #4ade80;
+            padding: 16px 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+            font-size: 0.9rem;
+            display: none;
+            line-height: 1.6;
+        }
+
+        .error-box {
+            background: #450a0a;
+            border: 1px solid #7f1d1d;
+            color: #f87171;
+            padding: 16px 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+            font-size: 0.9rem;
+            display: none;
+        }
+
+        .overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.92);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 200;
+        }
+
+        .spinner {
+            width: 48px; height: 48px;
+            border: 4px solid #1f2937;
+            border-top: 4px solid #f97316;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-bottom: 18px;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .overlay h3 { color: #f1f5f9; font-size: 1.1rem; }
+        .overlay p { color: #64748b; font-size: 0.85rem; margin-top: 8px; }
+
+        .next-step {
+            margin-top: 16px;
+            font-size: 0.85rem;
+        }
+
+        .next-step a {
+            color: #f97316;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .next-step a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+
+<nav>
+    <a class="logo" href="/">
+        <div class="logo-icon">🔭</div>
+        <span class="logo-text">Bot<span>Scope</span></span>
+    </a>
+    <div class="nav-links">
+        <a class="nav-link" href="/">Home</a>
+        <a class="nav-link" href="/user-analysis">User Analysis</a>
+        <a class="nav-link" href="/hashtag-analysis">Hashtag Analysis</a>
+        <a class="nav-link active" href="/simulation">Simulation Lab</a>
+    </div>
+</nav>
+
+<div class="page-header">
+    <h1>🧪 Simulation Lab</h1>
+    <p>Inject synthetic bot accounts into a hashtag campaign to benchmark detection accuracy.</p>
+</div>
+
+<div class="main">
+    <div class="info-banner">
+        <span>ℹ️</span>
+        <span>This tool generates synthetic bot accounts and populates them with automated posts using your chosen hashtags. After running, use <strong>Hashtag Analysis</strong> to verify detection accuracy against the injected bots.</span>
+    </div>
+
+    <div class="form-card">
+        <div class="field">
+            <label>Number of Bot Accounts</label>
+            <input type="number" id="numBots" value="5" min="1" max="50">
+            <div class="field-hint">How many unique bot accounts to create. Maximum 50 per run.</div>
+        </div>
+
+        <div class="field">
+            <label>Posts per Bot</label>
+            <input type="number" id="numPosts" value="3" min="1" max="20">
+            <div class="field-hint">Number of tweets each bot will generate.</div>
+        </div>
+
+        <hr class="divider">
+
+        <div class="field">
+            <label>Target Hashtags</label>
+            <textarea id="hashtags" placeholder="technology, science, bots, simulation">technology, science, bots, simulation</textarea>
+            <div class="field-hint">Comma-separated. Bots will randomly pick from this list when posting.</div>
+        </div>
+
+        <button class="btn-run" onclick="runSim()">
+            🚀 Run Simulation
+        </button>
+
+        <div id="successBox" class="success-box"></div>
+        <div id="errorBox" class="error-box"></div>
+    </div>
+</div>
+
+<div id="overlay" class="overlay">
+    <div class="spinner"></div>
+    <h3>Generating bot accounts...</h3>
+    <p>Creating accounts and injecting posts. This may take a moment.</p>
+</div>
+
+<script>
+    const API = 'http://localhost:8000';
+
+    async function runSim() {
+        const numBots = parseInt(document.getElementById('numBots').value);
+        const numPosts = parseInt(document.getElementById('numPosts').value);
+        const hashtags = document.getElementById('hashtags').value.trim();
+
+        if (!hashtags) return;
+
+        document.getElementById('successBox').style.display = 'none';
+        document.getElementById('errorBox').style.display = 'none';
+        document.getElementById('overlay').style.display = 'flex';
+
+        try {
+            const res = await fetch(`${API}/api/demonstrate`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ num_bots: numBots, num_posts: numPosts, hashtags })
+            });
+
+            const data = await res.json();
+
+            if (res.ok) {
+                const box = document.getElementById('successBox');
+                box.innerHTML = `
+                    <strong>Simulation complete.</strong><br>
+                    ${data.message}<br>
+                    <div class="next-step">
+                        Now run <a href="/hashtag-analysis">Hashtag Analysis</a> on one of your target hashtags to see detection results.
+                    </div>`;
+                box.style.display = 'block';
+            } else {
+                throw new Error(data.detail || 'Simulation failed.');
+            }
+        } catch (e) {
+            const box = document.getElementById('errorBox');
+            box.textContent = e.message;
+            box.style.display = 'block';
+        } finally {
+            document.getElementById('overlay').style.display = 'none';
+        }
+    }
+</script>
+</body>
+</html>
