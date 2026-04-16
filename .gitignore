@@ -9,8 +9,8 @@ ENV/
 *.sqlite
 *.sqlite3
 
-# Data
-data_source/
+# Data — tweets CSVs are too large for git; user CSVs are tracked
+data_source/*/tweets.csv
 
 # Python
 __pycache__/
